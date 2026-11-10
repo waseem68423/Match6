@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AMD AI League - Match 6 | Resilient Gemini Agent</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            amd: {
+              red: '#ED1C24',
+              ruby: '#B31010',
+              dark: '#080A0F',
+              card: '#10141E',
+              border: '#1E2638',
+              accent: '#00F0FF'
+            }
+          },
+          fontFamily: {
+            tactical: ['"Chakra Petch"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { background-color: #06080D; color: #E2E8F0; font-family: 'Inter', sans-serif; }
+    .hud-border { border: 1px solid rgba(237, 28, 36, 0.28); box-shadow: 0 0 20px rgba(237, 28, 36, 0.06); }
+    .pulse-glow { animation: pulseGlow 1.8s infinite; }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 8px rgba(0, 240, 255, 0.3); }
+      50% { box-shadow: 0 0 22px rgba(0, 240, 255, 0.6); }
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #080A0F; }
+    ::-webkit-scrollbar-thumb { background: #252F46; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-amd-red selection:text-white">
+
+  <!-- HEADER -->
+  <header class="border-b border-amd-border bg-[#0A0D14]/90 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="bg-amd-red text-white font-tactical font-black text-xl px-2.5 py-0.5 rounded shadow-lg shadow-amd-red/40 tracking-wider">
+          AMD
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs uppercase tracking-widest text-amd-accent font-mono font-bold">AI LEAGUE • MATCH 6</span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-red-950/80 text-red-400 border border-red-800">Nov 10–14</span>
+          </div>
+          <h1 class="text-sm sm:text-base font-tactical font-bold text-white tracking-wide">
+            Master the Unknown: Low-Compute Autonomous Agent
+          </h1>
+        </div>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="flex items-center space-x-5 text-xs font-mono">
+        <div>
+          <span class="text-slate-400">Tokens:</span>
+          <span id="nav-total-tokens" class="text-amd-accent font-bold ml-1">0</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Status:</span>
+          <span id="agent-status-tag" class="text-emerald-400 font-bold ml-1">READY</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto p-4 lg:p-6 flex-1 w-full flex flex-col gap-5">
+
+    <!-- CONFIGURATION & RECOVERY BAR -->
+    <div class="bg-amd-card hud-border rounded-xl p-4">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        
+        <!-- Gemini API Key -->
+        <div class="md:col-span-5">
+          <label class="block text-xs font-mono text-slate-300 mb-1 flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i data-lucide="key" class="w-3.5 h-3.5 text-amd-red"></i> Google Gemini API Key</span>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-amd-accent hover:underline flex items-center gap-0.5">
+              Get Key <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+          </label>
+          <div class="relative">
+            <input type="password" id="gemini-api-key" placeholder="AIzaSy..." 
+              class="w-full bg-[#080A0F] border border-amd-border focus:border-amd-accent rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none" />
+            <button onclick="toggleKeyVisibility()" class="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300">
+              <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Model Selector & Fallback Controller -->
+        <div class="md:col-span-4">
+          <label class="block text-xs font-mono text-slate-300 mb-1 flex items-center justify-between">
+            <span class="flex items-center gap-1"><i data-lucide="cpu" class="w-3.5 h-3.5 text-amd-accent"></i> Model (Auto-Fallback Enabled)</span>
+            <button onclick="fetchAvailableModels()" class="text-[10px] text-slate-400 hover:text-amd-accent underline">Check Models</button>
+          </label>
+          <div class="flex gap-1.5">
+            <select id="model-select" onchange="handleModelChange()"
+              class="bg-[#080A0F] border border-amd-border focus:border-amd-accent rounded-lg px-2.5 py-2 text-xs text-slate-200 font-mono flex-1 focus:outline-none">
+              <option value="gemini-2.5-flash">gemini-2.5-flash (Most Stable)</option>
+              <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (Ultra Fast)</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro (High Reasoning)</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash (Fallback Safe)</option>
+              <option value="custom">-- Custom Model --</option>
+            </select>
+            <input type="text" id="custom-model-input" placeholder="Model ID..." 
+              class="hidden bg-[#080A0F] border border-amd-border rounded-lg px-2 py-2 text-xs text-slate-200 font-mono w-32 focus:outline-none" />
+          </div>
+        </div>
+
+        <!-- Reset Button -->
+        <div class="md:col-span-3 flex gap-2">
+          <button onclick="generateNewArena()" 
+            class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-lg text-xs font-mono font-semibold flex items-center justify-center gap-2 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Reset Unknown Map
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Auto Failover Banner (Hidden by default) -->
+      <div id="failover-alert" class="hidden mt-3 p-2 bg-amber-950/60 border border-amber-600/70 rounded-lg text-xs font-mono text-amber-200 flex items-center justify-between">
+        <span class="flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+          <span id="failover-msg">Primary model busy. Auto-retry in progress...</span>
+        </span>
+        <button onclick="forceFallback()" class="bg-amber-700/80 hover:bg-amber-600 px-2.5 py-1 rounded text-[11px] font-bold text-white transition">
+          Switch to Stable gemini-2.5-flash
+        </button>
+      </div>
+    </div>
+
+    <!-- ARENA & CONTROLS -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1">
+
+      <!-- LEFT: FOG OF WAR MAP -->
+      <div class="lg:col-span-7 flex flex-col gap-4">
+        <div class="bg-amd-card hud-border rounded-xl p-5 flex flex-col">
+          
+          <div class="flex items-center justify-between pb-3 border-b border-amd-border">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="crosshair" class="w-4 h-4 text-amd-red animate-pulse"></i>
+              <h2 class="font-tactical font-bold text-base text-white tracking-wide">
+                TACTICAL EXPLORATION SECTOR
+              </h2>
+            </div>
+            <div class="flex items-center gap-3 text-xs font-mono">
+              <span class="text-slate-400">Explored: <span id="map-explored-pct" class="text-amd-accent font-bold">0%</span></span>
+              <span class="text-slate-400">HP: <span id="agent-hp" class="text-emerald-400 font-bold">100</span></span>
+            </div>
+          </div>
+
+          <!-- Mission Objectives -->
+          <div class="bg-[#080A0F] border border-amd-border rounded-lg p-2.5 my-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400 font-mono">OBJECTIVE:</span>
+              <span class="text-slate-200">1. Recover Relic 🏆 &nbsp;|&nbsp; 2. Reach Exit 🚪</span>
+            </div>
+            <div class="flex items-center gap-3 font-mono font-semibold">
+              <span id="relic-status" class="text-amber-400 flex items-center gap-1">Relic: Missing</span>
+              <span id="exit-status" class="text-slate-500 flex items-center gap-1">Exit: Locked</span>
+            </div>
+          </div>
+
+          <!-- Map Tiles Container -->
+          <div class="flex justify-center items-center py-2 bg-[#06080C] rounded-xl border border-slate-900 p-2">
+            <div id="grid-container" class="grid grid-cols-8 gap-1.5 p-2 bg-[#0A0D15] rounded-lg border border-slate-800">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="mt-3 pt-2.5 border-t border-amd-border/50 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-400">
+            <span class="flex items-center gap-1">🤖 Agent</span>
+            <span class="flex items-center gap-1">❓ Fog</span>
+            <span class="flex items-center gap-1">🏆 Relic</span>
+            <span class="flex items-center gap-1">⚡ Trap (-20 HP)</span>
+            <span class="flex items-center gap-1">🪨 Wall</span>
+            <span class="flex items-center gap-1">🚪 Exit</span>
+          </div>
+
+          <!-- Controls -->
+          <div class="mt-4 pt-3 border-t border-amd-border flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <button onclick="requestAiDecision()" id="btn-ai-step"
+                class="bg-amd-red hover:bg-amd-ruby text-white font-tactical font-bold px-4 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amd-red/30 transition active:scale-95">
+                <i data-lucide="zap" class="w-4 h-4"></i> Step AI (Single Turn)
+              </button>
+              
+              <button onclick="toggleAutoRun()" id="btn-auto-run"
+                class="bg-slate-800 hover:bg-slate-700 text-amd-accent border border-amd-accent/40 font-tactical font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 transition">
+                <i data-lucide="play" id="autorun-icon" class="w-4 h-4"></i> Auto-Play Loop
+              </button>
+            </div>
+
+            <div class="flex items-center gap-1 bg-[#090C12] p-1 rounded-lg border border-slate-800">
+              <button onclick="manualMove('UP')" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+              <button onclick="manualMove('DOWN')" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+              <button onclick="manualMove('LEFT')" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+              <button onclick="manualMove('RIGHT')" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded"><i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: COMPUTE EFFICIENCY & LIVE LOGS -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        
+        <!-- TELEMETRY METRICS -->
+        <div class="bg-amd-card hud-border rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-mono font-bold uppercase tracking-wider text-amd-accent flex items-center gap-1.5">
+              <i data-lucide="gauge" class="w-4 h-4"></i> Token & Latency Telemetry
+            </h3>
+            <span class="text-[10px] font-mono text-emerald-400">Match 6 Budget Target: Optimal</span>
+          </div>
+
+          <div class="grid grid-cols-4 gap-2 text-center font-mono">
+            <div class="bg-[#080A0F] border border-amd-border/80 rounded-lg p-2">
+              <span class="text-[9px] text-slate-400 block uppercase">Prompt Tok</span>
+              <span id="metric-prompt-tokens" class="text-sm font-bold text-slate-200">0</span>
+            </div>
+            <div class="bg-[#080A0F] border border-amd-border/80 rounded-lg p-2">
+              <span class="text-[9px] text-slate-400 block uppercase">Output Tok</span>
+              <span id="metric-output-tokens" class="text-sm font-bold text-amd-accent">0</span>
+            </div>
+            <div class="bg-[#080A0F] border border-amd-border/80 rounded-lg p-2">
+              <span class="text-[9px] text-slate-400 block uppercase">Latency</span>
+              <span id="metric-latency" class="text-sm font-bold text-yellow-400">0ms</span>
+            </div>
+            <div class="bg-[#080A0F] border border-amd-border/80 rounded-lg p-2">
+              <span class="text-[9px] text-slate-400 block uppercase">Steps</span>
+              <span id="metric-steps" class="text-sm font-bold text-emerald-400">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STRATEGY CONSOLE -->
+        <div class="bg-amd-card hud-border rounded-xl p-4 flex-1 flex flex-col min-h-[360px]">
+          <div class="flex items-center justify-between pb-2 border-b border-amd-border">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="terminal" class="w-4 h-4 text-amd-red"></i>
+              <h3 class="font-tactical font-bold text-xs uppercase text-white">Agent Tactical Reasoning</h3>
+            </div>
+            <button onclick="clearLogs()" class="text-slate-400 hover:text-slate-200 text-[11px] font-mono">Clear</button>
+          </div>
+
+          <div class="mt-2.5 p-2.5 bg-[#080A0F] border border-slate-800 rounded-lg font-mono text-xs">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+              <span>LAST ACTION:</span>
+              <span id="last-action-badge" class="px-2 py-0.5 rounded text-white bg-slate-800 font-bold">NONE</span>
+            </div>
+            <div class="text-slate-300 italic text-[11px]" id="last-reason-box">
+              "System ready. Trigger AI step or auto-loop to begin exploration."
+            </div>
+          </div>
+
+          <div id="terminal-feed" class="flex-1 mt-3 bg-[#05070B] border border-slate-900 rounded-lg p-3 font-mono text-xs overflow-y-auto space-y-1.5 max-h-[220px] text-slate-300">
+            <div class="text-cyan-400">[SYSTEM] Match 6 Autonomous Agent ready.</div>
+            <div class="text-slate-500">[INFO] Fault-tolerance & automatic backoff enabled for Google Gemini API.</div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-amd-border">
+            <input type="text" id="agent-custom-instruction" 
+              class="w-full bg-[#080A0F] border border-amd-border rounded p-2 text-slate-200 text-xs font-mono focus:outline-none"
+              placeholder="Custom Agent Directive: e.g. Hug left wall, aggressively scout fog" />
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer class="border-t border-amd-border bg-[#090C12] py-2 px-4 text-center text-xs font-mono text-slate-500">
+    AMD AI League • Match 6: Can Your AI Master the Unknown? • Lablab.ai
+  </footer>
+
+  <!-- SCRIPT -->
+  <script>
+    lucide.createIcons();
+
+    const GRID_SIZE = 8;
+    const TILE_TYPES = { EMPTY: '.', WALL: '#', TRAP: 'X', RELIC: 'R', EXIT: 'E' };
+
+    let worldGrid = [];
+    let agentFog = [];
+    let agentPos = { r: 0, c: 0 };
+    let agentHp = 100;
+    let hasRelic = false;
+    let isGameOver = false;
+    let missionComplete = false;
+
+    let totalPromptTokens = 0;
+    let totalOutputTokens = 0;
+    let totalSteps = 0;
+    let isAutoRunning = false;
+    let autoRunTimer = null;
+    let consecutiveErrors = 0;
+
+    /* MAP GENERATION */
+    function generateNewArena() {
+      stopAutoRun();
+      hideFailoverAlert();
+      worldGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(TILE_TYPES.EMPTY));
+      agentFog = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false));
+      agentPos = { r: 0, c: 0 };
+      agentHp = 100;
+      hasRelic = false;
+      isGameOver = false;
+      missionComplete = false;
+      totalSteps = 0;
+      consecutiveErrors = 0;
+
+      // Obstacles
+      let walls = 0;
+      while (walls < 10) {
+        let r = Math.floor(Math.random() * GRID_SIZE);
+        let c = Math.floor(Math.random() * GRID_SIZE);
+        if ((r !== 0 || c !== 0) && worldGrid[r][c] === TILE_TYPES.EMPTY) {
+          worldGrid[r][c] = TILE_TYPES.WALL;
+          walls++;
+        }
+      }
+
+      // Traps
+      let traps = 0;
+      while (traps < 4) {
+        let r = Math.floor(Math.random() * GRID_SIZE);
+        let c = Math.floor(Math.random() * GRID_SIZE);
+        if ((r !== 0 || c !== 0) && worldGrid[r][c] === TILE_TYPES.EMPTY) {
+          worldGrid[r][c] = TILE_TYPES.TRAP;
+          traps++;
+        }
+      }
+
+      // Relic
+      let placedRelic = false;
+      while (!placedRelic) {
+        let r = 3 + Math.floor(Math.random() * 5);
+        let c = 1 + Math.floor(Math.random() * 7);
+        if (worldGrid[r][c] === TILE_TYPES.EMPTY) {
+          worldGrid[r][c] = TILE_TYPES.RELIC;
+          placedRelic = true;
+        }
+      }
+
+      // Exit
+      worldGrid[GRID_SIZE - 1][GRID_SIZE - 1] = TILE_TYPES.EXIT;
+
+      revealVision(0, 0);
+      updateUI();
+      logTerminal("Procedural map initialized with fog-of-war.", "text-cyan-400");
+    }
+
+    function revealVision(r, c) {
+      agentFog[r][c] = true;
+      const neighbors = [
+        { r: r - 1, c: c }, { r: r + 1, c: c },
+        { r: r, c: c - 1 }, { r: r, c: c + 1 }
+      ];
+      neighbors.forEach(n => {
+        if (n.r >= 0 && n.r < GRID_SIZE && n.c >= 0 && n.c < GRID_SIZE) {
+          agentFog[n.r][n.c] = true;
+        }
+      });
+    }
+
+    function renderGrid() {
+      const container = document.getElementById('grid-container');
+      container.innerHTML = '';
+      let explored = 0;
+
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const isAgent = (r === agentPos.r && c === agentPos.c);
+          const isKnown = agentFog[r][c];
+          const type = worldGrid[r][c];
+
+          const tile = document.createElement('div');
+          tile.className = "w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded text-sm sm:text-base font-bold select-none transition-all duration-150 ";
+
+          if (isAgent) {
+            tile.className += "bg-blue-600 border border-blue-400 text-white pulse-glow z-10 scale-105";
+            tile.innerHTML = '🤖';
+          } else if (!isKnown) {
+            tile.className += "bg-[#0E121B] border border-slate-900 text-slate-700";
+            tile.innerHTML = '<span class="text-[10px]">?</span>';
+          } else {
+            explored++;
+            if (type === TILE_TYPES.WALL) {
+              tile.className += "bg-slate-800 border border-slate-700 text-slate-400";
+              tile.innerHTML = '🪨';
+            } else if (type === TILE_TYPES.TRAP) {
+              tile.className += "bg-red-950/80 border border-red-700 text-red-400";
+              tile.innerHTML = '⚡';
+            } else if (type === TILE_TYPES.RELIC) {
+              tile.className += "bg-amber-950/80 border border-amber-500 text-amber-300 animate-pulse";
+              tile.innerHTML = '🏆';
+            } else if (type === TILE_TYPES.EXIT) {
+              tile.className += "bg-emerald-950 border border-emerald-500 text-emerald-300";
+              tile.innerHTML = '🚪';
+            } else {
+              tile.className += "bg-[#141A26] border border-slate-800 text-slate-600";
+              tile.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>';
+            }
+          }
+          container.appendChild(tile);
+        }
+      }
+      document.getElementById('map-explored-pct').innerText = `${Math.round((explored / 64) * 100)}%`;
+    }
+
+    function updateUI() {
+      renderGrid();
+      document.getElementById('agent-hp').innerText = agentHp;
+      document.getElementById('metric-steps').innerText = totalSteps;
+      document.getElementById('nav-total-tokens').innerText = (totalPromptTokens + totalOutputTokens).toLocaleString();
+      document.getElementById('metric-prompt-tokens').innerText = totalPromptTokens.toLocaleString();
+      document.getElementById('metric-output-tokens').innerText = totalOutputTokens.toLocaleString();
+
+      if (hasRelic) {
+        document.getElementById('relic-status').innerHTML = '🏆 Relic: ACQUIRED';
+        document.getElementById('relic-status').className = 'text-emerald-400 font-bold';
+        document.getElementById('exit-status').innerHTML = '🚪 Exit: UNLOCKED';
+        document.getElementById('exit-status').className = 'text-emerald-400 font-bold';
+      } else {
+        document.getElementById('relic-status').innerHTML = 'Relic: Missing';
+        document.getElementById('relic-status').className = 'text-amber-400';
+        document.getElementById('exit-status').innerHTML = 'Exit: Locked';
+        document.getElementById('exit-status').className = 'text-slate-500';
+      }
+      lucide.createIcons();
+    }
+
+    function executeAction(dir) {
+      if (isGameOver || missionComplete) return false;
+
+      let nr = agentPos.r;
+      let nc = agentPos.c;
+      if (dir === 'UP') nr--;
+      else if (dir === 'DOWN') nr++;
+      else if (dir === 'LEFT') nc--;
+      else if (dir === 'RIGHT') nc++;
+      else return false;
+
+      if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) {
+        logTerminal(`[WALL COLLISION] Map boundary hit at [${nr}, ${nc}]`, "text-amber-400");
+        return false;
+      }
+
+      if (worldGrid[nr][nc] === TILE_TYPES.WALL) {
+        agentFog[nr][nc] = true;
+        updateUI();
+        logTerminal(`[OBSTACLE] Rock wall blocks path at [${nr}, ${nc}]`, "text-amber-400");
+        return false;
+      }
+
+      agentPos.r = nr;
+      agentPos.c = nc;
+      totalSteps++;
+      revealVision(nr, nc);
+
+      const cell = worldGrid[nr][nc];
+      if (cell === TILE_TYPES.TRAP) {
+        agentHp = Math.max(0, agentHp - 20);
+        logTerminal(`[HAZARD] Stepped on trap! -20 HP. Agent HP: ${agentHp}`, "text-red-400");
+        if (agentHp <= 0) {
+          isGameOver = true;
+          stopAutoRun();
+          logTerminal(`[CRITICAL] Agent destroyed. Mission Failed.`, "text-red-500 font-bold");
+          alert("Agent HP reached 0! Reset map to retry.");
+        }
+      } else if (cell === TILE_TYPES.RELIC) {
+        hasRelic = true;
+        worldGrid[nr][nc] = TILE_TYPES.EMPTY;
+        logTerminal(`[OBJECTIVE] Alien Relic recovered! Now reach the Exit 🚪`, "text-amber-300 font-bold");
+      } else if (cell === TILE_TYPES.EXIT) {
+        if (hasRelic) {
+          missionComplete = true;
+          stopAutoRun();
+          logTerminal(`[VICTORY] Match 6 Mission Completed in ${totalSteps} steps!`, "text-emerald-400 font-bold");
+          alert(`Mission Complete! Extracted with Alien Relic in ${totalSteps} steps.`);
+        } else {
+          logTerminal(`[DOOR LOCKED] Exit door requires Alien Relic first!`, "text-yellow-400");
+        }
+      }
+
+      updateUI();
+      return true;
+    }
+
+    function manualMove(dir) {
+      executeAction(dir);
+    }
+
+    /* MODEL SELECTION & DYNAMIC FETCHING */
+    function getSelectedModel() {
+      const select = document.getElementById('model-select').value;
+      if (select === 'custom') {
+        return document.getElementById('custom-model-input').value.trim() || 'gemini-2.5-flash';
+      }
+      return select;
+    }
+
+    function handleModelChange() {
+      const select = document.getElementById('model-select').value;
+      const customInput = document.getElementById('custom-model-input');
+      if (select === 'custom') {
+        customInput.classList.remove('hidden');
+      } else {
+        customInput.classList.add('hidden');
+      }
+    }
+
+    async function fetchAvailableModels() {
+      const apiKey = document.getElementById('gemini-api-key').value.trim();
+      if (!apiKey) return alert("Enter Gemini API Key first!");
+      try {
+        logTerminal("Querying available Gemini models for this key...", "text-slate-400");
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await res.json();
+        if (data.models) {
+          const select = document.getElementById('model-select');
+          select.innerHTML = '';
+          const flashModels = data.models.filter(m => m.name.includes('gemini') && m.supportedGenerationMethods?.includes('generateContent'));
+          flashModels.forEach(m => {
+            const shortName = m.name.replace('models/', '');
+            const opt = document.createElement('option');
+            opt.value = shortName;
+            opt.innerText = shortName;
+            select.appendChild(opt);
+          });
+          const optCustom = document.createElement('option');
+          optCustom.value = 'custom';
+          optCustom.innerText = '-- Custom Model --';
+          select.appendChild(optCustom);
+          logTerminal(`Discovered ${flashModels.length} models for your key.`, "text-emerald-400");
+        }
+      } catch (e) {
+        logTerminal(`Could not fetch models: ${e.message}`, "text-red-400");
+      }
+    }
+
+    function forceFallback() {
+      document.getElementById('model-select').value = 'gemini-2.5-flash';
+      document.getElementById('custom-model-input').classList.add('hidden');
+      hideFailoverAlert();
+      logTerminal("Manually switched model to gemini-2.5-flash.", "text-cyan-400");
+      if (isAutoRunning) runNextAutoTurn();
+      else requestAiDecision();
+    }
+
+    function showFailoverAlert(msg) {
+      const banner = document.getElementById('failover-alert');
+      document.getElementById('failover-msg').innerText = msg;
+      banner.classList.remove('hidden');
+    }
+
+    function hideFailoverAlert() {
+      document.getElementById('failover-alert').classList.add('hidden');
+    }
+
+    /* COMPACT RADAR RECONSTRUCTION */
+    function getMapSnapshot() {
+      let rows = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        let row = '';
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (r === agentPos.r && c === agentPos.c) row += 'A ';
+          else if (!agentFog[r][c]) row += '? ';
+          else row += (worldGrid[r][c] + ' ');
+        }
+        rows.push(row.trim());
+      }
+      return rows.join('\n');
+    }
+
+    /* CALL GEMINI WITH WATCHDOG & AUTO-RETRY */
+    async function requestAiDecision() {
+      const apiKey = document.getElementById('gemini-api-key').value.trim();
+      if (!apiKey) {
+        alert("Please enter your Google Gemini API Key!");
+        document.getElementById('gemini-api-key').focus();
+        stopAutoRun();
+        return;
+      }
+
+      if (isGameOver || missionComplete) {
+        stopAutoRun();
+        return;
+      }
+
+      let model = getSelectedModel();
+      const customDirective = document.getElementById('agent-custom-instruction').value.trim();
+      const mapStr = getMapSnapshot();
+
+      const prompt = `Match 6 Autonomous Agent. Goal: Explore hidden fog (?), avoid traps (X), recover relic (R), then exit (E).
+Agent HP: ${agentHp}, Has Relic: ${hasRelic}
+Agent at: [${agentPos.r}, ${agentPos.c}]
+Legend: A:agent, ?:fog, #:wall, X:trap, R:relic, E:exit, .:open
+Map:
+${mapStr}
+${customDirective ? 'Directive: ' + customDirective : ''}
+Reply STRICT JSON ONLY:
+{"action":"UP"|"DOWN"|"LEFT"|"RIGHT","reason":"<max 6 words>"}`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      document.getElementById('agent-status-tag').innerText = "AI THINKING...";
+      document.getElementById('agent-status-tag').className = "text-amber-400 font-bold";
+
+      const startTime = performance.now();
+      
+      // Watchdog Controller (Abort after 8 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 60 // Minimize inference tokens for Match 6
+            }
+          })
+        });
+
+        clearTimeout(timeoutId);
+        const elapsed = Math.round(performance.now() - startTime);
+        document.getElementById('metric-latency').innerText = `${elapsed}ms`;
+
+        if (!response.ok) {
+          const errData = await response.json();
+          const errMsg = errData.error?.message || `HTTP ${response.status}`;
+          throw new Error(errMsg);
+        }
+
+        const data = await response.json();
+        
+        // Count tokens
+        if (data.usageMetadata) {
+          totalPromptTokens += (data.usageMetadata.promptTokenCount || 0);
+          totalOutputTokens += (data.usageMetadata.candidatesTokenCount || 0);
+        }
+
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        
+        // Resilient JSON / Action Extraction
+        let action = null;
+        let reason = "Moving";
+
+        try {
+          const clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(clean);
+          action = parsed.action;
+          reason = parsed.reason || reason;
+        } catch (pe) {
+          // Fallback regex match if model returned commentary
+          const match = rawText.match(/"action"\s*:\s*"(UP|DOWN|LEFT|RIGHT)"/i);
+          if (match) action = match[1].toUpperCase();
+        }
+
+        if (!action) {
+          throw new Error("Could not parse action from Gemini response.");
+        }
+
+        consecutiveErrors = 0;
+        hideFailoverAlert();
+
+        document.getElementById('last-action-badge').innerText = action;
+        document.getElementById('last-reason-box').innerText = `"${reason}"`;
+        logTerminal(`[${model}] -> ${action} | "${reason}"`, "text-amd-accent");
+
+        executeAction(action);
+
+      } catch (err) {
+        console.warn("Gemini Error:", err);
+        consecutiveErrors++;
+
+        // Handle Overloaded / 503 / High Demand
+        const isHighDemand = err.message.includes('high demand') || err.message.includes('503') || err.message.includes('RESOURCE_EXHAUSTED');
+        
+        if (isHighDemand) {
+          showFailoverAlert(`Model '${model}' is overloaded. Retrying automatically...`);
+          logTerminal(`[HIGH DEMAND] ${err.message}. Retrying turn in 2.5s...`, "text-amber-400");
+          
+          // If overloaded 2 times in a row, auto-switch to stable gemini-2.5-flash
+          if (consecutiveErrors >= 2 && model !== 'gemini-2.5-flash') {
+            logTerminal(`[AUTO-FAILOVER] Switching from ${model} -> gemini-2.5-flash to continue run.`, "text-cyan-300 font-bold");
+            document.getElementById('model-select').value = 'gemini-2.5-flash';
+            document.getElementById('custom-model-input').classList.add('hidden');
+          }
+        } else {
+          logTerminal(`[ERROR] ${err.message}`, "text-red-400");
+          if (consecutiveErrors > 3) {
+            stopAutoRun();
+          }
+        }
+      } finally {
+        document.getElementById('agent-status-tag').innerText = "AGENT READY";
+        document.getElementById('agent-status-tag').className = "text-emerald-400 font-bold";
+      }
+    }
+
+    /* AUTO RUNNER LOOP */
+    function toggleAutoRun() {
+      if (isAutoRunning) stopAutoRun();
+      else startAutoRun();
+    }
+
+    function startAutoRun() {
+      const apiKey = document.getElementById('gemini-api-key').value.trim();
+      if (!apiKey) return alert("Enter Gemini API Key first!");
+
+      isAutoRunning = true;
+      document.getElementById('btn-auto-run').classList.replace('bg-slate-800', 'bg-amd-red');
+      document.getElementById('btn-auto-run').classList.replace('text-amd-accent', 'text-white');
+      document.getElementById('btn-auto-run').innerHTML = '<i data-lucide="square" class="w-4 h-4"></i> Stop Loop';
+      lucide.createIcons();
+
+      runNextAutoTurn();
+    }
+
+    function stopAutoRun() {
+      isAutoRunning = false;
+      if (autoRunTimer) clearTimeout(autoRunTimer);
+      document.getElementById('btn-auto-run').classList.replace('bg-amd-red', 'bg-slate-800');
+      document.getElementById('btn-auto-run').classList.replace('text-white', 'text-amd-accent');
+      document.getElementById('btn-auto-run').innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Auto-Play Loop';
+      lucide.createIcons();
+    }
+
+    async function runNextAutoTurn() {
+      if (!isAutoRunning || isGameOver || missionComplete) {
+        stopAutoRun();
+        return;
+      }
+      await requestAiDecision();
+      if (isAutoRunning && !isGameOver && !missionComplete) {
+        // Paced turn loop: 1.2s delay to prevent hitting rate limits
+        autoRunTimer = setTimeout(runNextAutoTurn, 1200);
+      }
+    }
+
+    function logTerminal(msg, color = "text-slate-300") {
+      const feed = document.getElementById('terminal-feed');
+      const time = new Date().toLocaleTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.className = color;
+      div.innerHTML = `<span class="text-slate-600">[${time}]</span> ${msg}`;
+      feed.appendChild(div);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function clearLogs() {
+      document.getElementById('terminal-feed').innerHTML = '';
+    }
+
+    function toggleKeyVisibility() {
+      const input = document.getElementById('gemini-api-key');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // Auto save key in localStorage
+    const keyInput = document.getElementById('gemini-api-key');
+    const saved = localStorage.getItem('match6_gemini_key');
+    if (saved) keyInput.value = saved;
+    keyInput.addEventListener('change', () => localStorage.setItem('match6_gemini_key', keyInput.value.trim()));
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        if (e.key === 'ArrowUp') manualMove('UP');
+        if (e.key === 'ArrowDown') manualMove('DOWN');
+        if (e.key === 'ArrowLeft') manualMove('LEFT');
+        if (e.key === 'ArrowRight') manualMove('RIGHT');
+      }
+    });
+
+    window.onload = () => generateNewArena();
+  </script>
+</body>
+</html>
